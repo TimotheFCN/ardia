@@ -18,7 +18,8 @@ type PluginCall =
   | { kind: "tool"; tool: string; input: unknown }
   | { kind: "command"; command: string; context: Record<string, unknown> }
   | { kind: "omnibox"; provider: string; query: string }
-  | { kind: "decide"; event: string; data: Record<string, unknown> };
+  | { kind: "decide"; event: string; data: Record<string, unknown> }
+  | { kind: "vault"; verb: string; input: Record<string, unknown> };
 
 type Pending = { id: string; plugin: string; run: number; caller: string | null; isTool: boolean; consent: ConsentToken | null; settle: (outcome: ToolOutcome) => void; timer: ReturnType<typeof setTimeout>; detach: () => void };
 
@@ -52,10 +53,12 @@ function lineOf(id: string, call: PluginCall, given: ToolCaller, deadline: numbe
   if (call.kind === "tool") return JSON.stringify({ call: id, tool: call.tool, input: call.input === undefined ? {} : call.input, caller, deadline });
   if (call.kind === "command") return JSON.stringify({ call: id, kind: call.kind, name: call.command, context: call.context, caller, deadline });
   if (call.kind === "omnibox") return JSON.stringify({ call: id, kind: call.kind, name: call.provider, input: call.query, caller, deadline });
+  if (call.kind === "vault") return JSON.stringify({ call: id, kind: call.kind, name: call.verb, input: call.input, caller, deadline });
   return JSON.stringify({ call: id, kind: call.kind, name: call.event, input: call.data, caller, deadline });
 }
 
-const labelOf = (call: PluginCall) => (call.kind === "tool" ? call.tool : call.kind === "command" ? call.command : call.kind === "omnibox" ? `omnibox ${call.provider}` : call.event);
+const labelOf = (call: PluginCall) =>
+  call.kind === "tool" ? call.tool : call.kind === "command" ? call.command : call.kind === "omnibox" ? `omnibox ${call.provider}` : call.kind === "vault" ? `vault ${call.verb}` : call.event;
 
 function send(plugin: string, run: number, call: PluginCall, caller: ToolCaller, timeoutMs: number, consent: ConsentToken | null, signal?: AbortSignal): Promise<ToolOutcome> {
   if (signal?.aborted) return Promise.resolve(CANCELLED);
@@ -121,7 +124,16 @@ function whileCallerRuns(caller: string | null, ready: Promise<number | ToolOutc
 
 export async function invokePluginCall(plugin: string, call: PluginCall, caller: ToolCaller, timeoutMs: number, options: { activate?: boolean; consent?: ConsentToken | null; signal?: AbortSignal } = {}): Promise<ToolOutcome> {
   const consent = options.consent !== undefined ? options.consent : consentToken();
-  const trigger = call.kind === "tool" ? `onTool:${call.tool}` : call.kind === "command" ? `onCommand:${call.command}` : call.kind === "omnibox" ? `onOmnibox:${call.provider}` : `onEvent:${call.event}`;
+  const trigger =
+    call.kind === "tool"
+      ? `onTool:${call.tool}`
+      : call.kind === "command"
+        ? `onCommand:${call.command}`
+        : call.kind === "omnibox"
+          ? `onOmnibox:${call.provider}`
+          : call.kind === "vault"
+            ? `onVault:${call.verb}`
+            : `onEvent:${call.event}`;
   const callerName = caller.kind === "plugin" ? caller.plugin : null;
   const callerRun = callerName === null ? null : runningRun(callerName);
   const run = await whileCallerRuns(callerName, readyRunFor(plugin, trigger, options.activate !== false));
@@ -139,6 +151,22 @@ export function callTool(plugin: string, tool: string, input: unknown, caller: T
   if (!spec) return Promise.resolve(failed("bad_request", `${plugin} has no tool ${tool}.`));
   if (!manifest.main && runningRun(plugin) === null) return Promise.resolve(failed("failed", `${plugin}'s helper isn't running.`));
   return invokePluginCall(plugin, { kind: "tool", tool, input }, caller, spec.timeout * 1000, { consent });
+}
+
+export type VaultOutcome = { ok: true; result: Record<string, unknown> } | { ok: false; code: string; message: string };
+
+export async function callVault(plugin: string, verb: string, input: Record<string, unknown>, timeoutMs: number, signal?: AbortSignal): Promise<VaultOutcome> {
+  if (activeManifest(currentPlugins(), plugin)?.passwordManager?.fill !== "tool") return { ok: false, code: "refused", message: `${plugin} isn't a password manager with its own vault.` };
+  const outcome = await invokePluginCall(plugin, { kind: "vault", verb, input }, { kind: "host" }, timeoutMs, { activate: false, consent: null, signal });
+  if (!outcome.ok) return { ok: false, code: outcome.code === "refused" ? "refused" : "failed", message: outcome.message };
+  const result = outcome.result;
+  if (typeof result !== "object" || result === null || Array.isArray(result)) return { ok: false, code: "failed", message: `${plugin} answered ${verb} with something that isn't an object.` };
+  const error = (result as { error?: unknown }).error;
+  if (typeof error === "object" && error !== null) {
+    const { code, message } = error as { code?: unknown; message?: unknown };
+    return { ok: false, code: typeof code === "string" ? code.slice(0, 40) : "failed", message: typeof message === "string" ? message.slice(0, 500) : "The vault call failed." };
+  }
+  return { ok: true, result: result as Record<string, unknown> };
 }
 
 export function answerCall(plugin: string, run: number, params: Record<string, unknown>): string | null {

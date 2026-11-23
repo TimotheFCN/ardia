@@ -505,7 +505,8 @@
             "properties": {
               "fill": {
                 "enum": [
-                  "system"
+                  "system",
+                  "tool"
                 ],
                 "description": "system: macOS's Passwords panel fills the field. tool is reserved and refused for now"
               },
@@ -1180,7 +1181,8 @@
         "properties": {
           "fill": {
             "enum": [
-              "system"
+              "system",
+              "tool"
             ],
             "description": "system: macOS's Passwords panel fills the field. tool is reserved and refused for now"
           },

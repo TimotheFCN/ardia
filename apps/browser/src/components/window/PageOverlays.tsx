@@ -13,6 +13,8 @@ import { startPopoverEscape } from "../../state/tabs/popoverDismiss";
 import { SadTab, StatusBubble } from "./PaneOverlays";
 import { AutofillPrompt, BLOCKED_POPUPS_WIDTH, BlockedPopupsPrompt, EXTERNAL_APP_WIDTH, ExternalAppPrompt, PasswordPrompt, PERMISSION_PROMPT_WIDTH, PermissionPrompt, VerificationCodePrompt } from "../site/Prompts";
 import { SiteControlsPanel } from "../site/SiteControls";
+import { VaultSavePrompt } from "../site/VaultSavePrompt";
+import { VaultMenu } from "../site/VaultMenu";
 import { SITE_PANEL } from "../site/SiteControlsParts";
 import { ZOOM_POPOVER_WIDTH, ZoomPanel } from "../site/ZoomControls";
 import { HIDDEN_ELEMENTS_WIDTH, HiddenElementsPanel } from "../site/HiddenElements";
@@ -85,6 +87,8 @@ export function PageOverlays({
       {cliPill && control.mounted && <ControlPill style={statusStyle} enter={control.enter} />}
       {!newTabShown && has("permission") && <PermissionPrompt tabId={tabId} {...at("prompt", PERMISSION_PROMPT_WIDTH)} />}
       {has("password") && <PasswordPrompt tabId={tabId} right={POPOVER_MARGIN} top={POPOVER_MARGIN} />}
+      {has("vaultSave") && <VaultSavePrompt tabId={tabId} right={POPOVER_MARGIN} top={POPOVER_MARGIN} />}
+      {has("vaultMenu") && <VaultMenu tabId={tabId} />}
       {has("autofill") && <AutofillPrompt tabId={tabId} right={POPOVER_MARGIN} top={POPOVER_MARGIN} />}
       {verificationCodes && has("verificationCode") && <VerificationCodePrompt tabId={tabId} right={POPOVER_MARGIN} top={POPOVER_MARGIN} />}
       {has("newTabNotice") && <NewTabNotice windowId={windowId} tabId={tabId} right={POPOVER_MARGIN} top={POPOVER_MARGIN} enter={overlays.entersLater("newTabNotice")} />}

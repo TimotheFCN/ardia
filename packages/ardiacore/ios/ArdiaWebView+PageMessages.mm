@@ -208,6 +208,7 @@ NSMutableOrderedSet<NSString *> *ScriptFramesOf(ArdiaCoreTab *tab) {
       NSMutableDictionary *payload = [@{@"via" : @"badge", @"shown" : result[@"shown"] ?: @NO} mutableCopy];
       if (reason) payload[@"reason"] = reason;
       if (result[@"panel"]) payload[@"panel"] = result[@"panel"];
+      if (result[@"field"]) payload[@"field"] = result[@"field"];
       [weakSelf emit:@"fieldProviderOpened" payload:payload];
     };
     if (!_visible) {
@@ -215,6 +216,15 @@ NSMutableOrderedSet<NSString *> *ScriptFramesOf(ArdiaCoreTab *tab) {
       report(@{@"shown" : @NO, @"reason" : @"hidden"});
     }
     else [ArdiaWebView requestSystemPanelIn:tab.view owner:tab profile:_profile field:field generation:generation completion:report];
+  } else if ([kind isEqualToString:@"vaultLogin"] && dict) {
+    NSDictionary *provider = FieldProviderFor(_profile);
+    NSString *username = Field<NSString>(dict, @"username") ?: @"";
+    NSString *password = Field<NSString>(dict, @"password");
+    double generation;
+    if (!Flag(provider, @"host") || !Finite(dict, @"generation", &generation) || generation != [provider[@"generation"] doubleValue] || !password.length ||
+        password.length > 1024 || username.length > 1024 || ![self sameSiteFrame:main origin:sender])
+      return;
+    [self emit:@"vaultLogin" payload:@{@"username" : username, @"password" : password, @"main" : @(main)}];
   } else if ([kind isEqualToString:@"verificationCode"] && main && dict) {
     double generation;
     if (!Finite(dict, @"generation", &generation)) return;

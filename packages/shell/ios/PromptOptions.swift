@@ -7,4 +7,5 @@ struct PromptOptions: Record {
   @Field var placeholder: String?
   @Field var confirmTitle: String = "OK"
   @Field var windowId: String?
+  @Field var secure: Bool = false
 }

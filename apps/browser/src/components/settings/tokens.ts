@@ -97,7 +97,7 @@ export const paneTints = {
 
 export const paneTile = { size: 20, radius: 5, symbol: 11 } as const;
 
-export const settingsLayout = { emptyTop: 40, sidebarWidth: 214, paneMaxWidth: 600, paneBottom: 40 } as const;
+export const settingsLayout = { emptyTop: 40, sidebarWidth: 214, paneMaxWidth: 600, paneBottom: 40, listRow: 48 } as const;
 
 export const choicePreview = {
   tabRows: [1, 0.85, 0.95, 0.7],

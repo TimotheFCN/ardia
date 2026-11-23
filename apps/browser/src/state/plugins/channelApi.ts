@@ -19,6 +19,7 @@ import { valuesFor } from "./values";
 import { netFetch, readActivePage, secretsMethod, storageMethod } from "./channelData";
 import { UI_METHODS, uiMethod } from "./channelUi";
 import { programsStatus, relinkOwnPrograms } from "./programs";
+import { vaultMessage } from "../vaults/store";
 
 const CHANNEL_PROTOCOL = 2;
 const LEGACY_CHANNEL_PROTOCOL = 1;
@@ -136,6 +137,10 @@ export function answerMethod(c: ChannelCaller, m: PluginManifest, method: string
       const problem = answerCall(c.name, c.run, params);
       return problem ? failure("bad_request", problem) : { result: { ok: true } };
     }
+    case "vault.ready":
+    case "vault.event":
+      if (m.passwordManager?.fill !== "tool") return failure("refused", `${method} is for password managers with their own vault (passwordManager.fill: tool).`);
+      return vaultMessage(c.name, c.run, method, params) ?? { result: { ok: true } };
   }
   if (method.startsWith("storage.") && ["storage.get", "storage.set", "storage.delete", "storage.keys"].includes(method)) return storageMethod(c, m, method, params);
   if (["secrets.get", "secrets.set", "secrets.delete"].includes(method)) return secretsMethod(c, m, method, params);

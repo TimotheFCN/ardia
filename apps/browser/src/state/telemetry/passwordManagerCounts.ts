@@ -4,7 +4,7 @@ import type { ConsentToken } from "./choice";
 import { consentOrNow, countFor } from "./countFor";
 
 type PanelOpener = "badge" | "menu";
-type PanelRefusal = NonNullable<FieldProviderOpened["reason"]>;
+type PanelRefusal = Exclude<NonNullable<FieldProviderOpened["reason"]>, "host">;
 type VerificationCodeStep = "offered" | "accepted" | "failed";
 
 const PANEL_FIELDS: Record<PanelOpener, [shown: string, refused: string]> = {

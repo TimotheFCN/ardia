@@ -114,6 +114,7 @@ export const emitDownload = (download: EngineEvents["downloads.changed"]) => emi
 export const emitPermission = (request: EngineEvents["permissions.requested"]) => emitEvent("permissions.requested", request);
 
 export const passwordProviders = {
+  ownerConfirmed: true,
   calls: [] as unknown[][],
   generation: 0,
   profiles: [] as { profile: string; fields: string[]; codeSetup: boolean }[],
@@ -160,6 +161,7 @@ const providerFakes = {
   showSystemPanel: ({ tab, generation }: { tab: string; generation?: number }) => (passwordProviders.calls.push(["showSystemPanel", tab]), (passwordProviders.lastPanelGeneration = generation), { ...passwordProviders.panel }),
   showPanelHint: ({ tab, label, side }: { tab: string; label: string; side: string }) => (passwordProviders.hints.push({ tab, label, side }), { shown: passwordProviders.hintShown }),
   systemPanelAvailable: () => ({ chromium: true, webkit: true }),
+  confirmOwner: ({ reason }: { reason: string }) => (passwordProviders.calls.push(["confirmOwner", reason]), { confirmed: passwordProviders.ownerConfirmed }),
   otpauthHandler: async () => (passwordProviders.calls.push(["otpauthHandler"]), await passwordProviders.handlerGate, { app: passwordProviders.handlerApp }),
   setUpVerificationCode: ({ tab, token, generation }: { tab: string; token: string; generation?: number }) => (passwordProviders.opened.push({ tab, token, generation }), { opened: passwordProviders.openResult }),
 };

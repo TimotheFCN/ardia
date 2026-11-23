@@ -1,6 +1,6 @@
-import { call, type FieldProviderHint, type FieldProviderOpened, type FieldProviderProfile, type VerificationCodeFound } from "@ardia/ardiacore";
+import { call, type FieldProviderHint, type FieldProviderOpened, type FieldProviderProfile, type VerificationCodeFound, type VaultLogin } from "@ardia/ardiacore";
 
-export type { FieldProviderHint, FieldProviderOpened, VerificationCodeFound };
+export type { FieldProviderHint, FieldProviderOpened, VerificationCodeFound, VaultLogin };
 type FieldProvider = FieldProviderProfile;
 
 const PROVIDER_SESSION = Array.from({ length: 4 }, () => Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, "0")).join("");

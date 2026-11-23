@@ -97,13 +97,14 @@ public class DialogsModule: Module {
       let alert = DialogsModule.alert(title: options.title, message: options.message)
       alert.addButton(withTitle: options.confirmTitle)
       alert.addButton(withTitle: "Cancel")
-      let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+      let frame = NSRect(x: 0, y: 0, width: 260, height: 24)
+      let field = options.secure ? NSSecureTextField(frame: frame) : NSTextField(frame: frame)
       field.stringValue = options.value
       field.placeholderString = options.placeholder
       alert.accessoryView = field
       alert.window.initialFirstResponder = field
       DialogsModule.present(alert, windowId: options.windowId) { response in
-        let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = options.secure ? field.stringValue : field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         promise.resolve(response == .alertFirstButtonReturn && !text.isEmpty ? text : nil)
       }
     }.runOnQueue(.main)

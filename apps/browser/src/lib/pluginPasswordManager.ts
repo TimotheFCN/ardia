@@ -2,10 +2,10 @@ import { isFields } from "./decode";
 
 export const PASSWORD_FIELDS = ["login", "oneTimeCode"] as const;
 export type PasswordField = (typeof PASSWORD_FIELDS)[number];
-export const PASSWORD_FILLS = ["system"] as const;
-const RESERVED_PASSWORD_FILLS = ["tool"] as const;
+export const PASSWORD_FILLS = ["system", "tool"] as const;
+export type PasswordFill = (typeof PASSWORD_FILLS)[number];
 export const PASSWORD_FIELD_COUNT = [1, 2] as const;
-export type PasswordManagerSpec = { fill: "system"; fields: PasswordField[]; verificationCodeSetup: "system" | null; passkeys: "system" | null };
+export type PasswordManagerSpec = { fill: PasswordFill; fields: PasswordField[]; verificationCodeSetup: "system" | null; passkeys: "system" | null };
 
 const KEYS = ["fill", "fields", "verificationCodeSetup", "passkeys"];
 const PATH = "passwordManager";
@@ -17,10 +17,9 @@ function systemOnly(problems: string[], key: string, value: unknown): "system" |
   return null;
 }
 
-function fillOf(problems: string[], value: unknown): "system" | null {
-  if (value === "system") return "system";
-  if ((RESERVED_PASSWORD_FILLS as readonly unknown[]).includes(value)) problems.push(`${PATH}.fill: ${String(value)} isn't available yet; use system`);
-  else problems.push(`${PATH}.fill must be system`);
+function fillOf(problems: string[], value: unknown): PasswordFill | null {
+  if ((PASSWORD_FILLS as readonly unknown[]).includes(value)) return value as PasswordFill;
+  problems.push(`${PATH}.fill must be ${PASSWORD_FILLS.join(" or ")}`);
   return null;
 }
 

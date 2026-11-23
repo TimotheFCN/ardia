@@ -1,0 +1,16 @@
+{
+  "$schema": "../../docs/plugin.schema.json",
+  "manifest": 2,
+  "name": "bitwarden",
+  "title": "Bitwarden",
+  "description": "Fill logins and verification codes from Bitwarden or Vaultwarden, through rbw-ng.",
+  "version": "0.1.0",
+  "requires": "0.2.48",
+  "icon": "key.fill",
+  "keywords": ["bitwarden", "vaultwarden", "passwords", "rbw"],
+  "sidecar": { "run": ["bin/bitwarden-bridge"], "memoryMB": 256 },
+  "permissions": { "network": "*" },
+  "contributes": {
+    "passwordManager": { "fill": "tool", "fields": ["login", "oneTimeCode"] }
+  }
+}

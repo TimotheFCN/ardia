@@ -95,6 +95,7 @@ type NativeEvents = {
   onTransferRefused: { from: string };
   onAppBadge: AppBadge;
   onFieldProviderOpened: FieldProviderOpened;
+  onVaultLogin: { username?: unknown; password?: unknown; main?: unknown };
   onFieldProviderHint: { state?: string };
   onVerificationCodeFound: VerificationCodeFound;
 };
@@ -102,7 +103,8 @@ type Handlers = keyof NativeEvents;
 export type PageEvent = { name: string; data: unknown };
 export type NativeProps = Omit<WebViewProps, Handlers> & { pageEvents: string[]; onPageEvent: (e: NativeSyntheticEvent<PageEvent>) => void };
 
-const FIELD_PROVIDER_REFUSALS: readonly FieldProviderPanelRefusal[] = ["hidden", "notFocused", "unavailable", "notKey", "notEditing", "throttled", "refused", "noPanel"];
+const FIELD_PROVIDER_REFUSALS: readonly FieldProviderPanelRefusal[] = ["hidden", "notFocused", "unavailable", "notKey", "notEditing", "throttled", "refused", "noPanel", "host"];
+const FIELD_PROVIDER_FIELDS = ["username", "password", "code"] as const;
 const FOCUS_RESTORE_OUTCOMES: readonly FocusRestoreOutcome[] = ["focused", "kept", "refused", "gaveUp"];
 
 const PAGE_EVENTS = {
@@ -157,6 +159,7 @@ const PAGE_EVENTS = {
   onTransferRefused: "transferRefused",
   onAppBadge: "appBadge",
   onFieldProviderOpened: "fieldProviderOpened",
+  onVaultLogin: "vaultLogin",
   onFieldProviderHint: "fieldProviderHint",
   onVerificationCodeFound: "verificationCodeFound",
 } as const satisfies Record<Handlers, string>;
@@ -221,6 +224,14 @@ const unwrap: { [K in Handlers]: (e: NativeEvents[K]) => Parameters<NonNullable<
       shown: e.shown === true,
       ...(e.shown !== true && FIELD_PROVIDER_REFUSALS.includes(e.reason as FieldProviderPanelRefusal) ? { reason: e.reason } : {}),
       ...(e.shown === true && (e.panel === "above" || e.panel === "below") ? { panel: e.panel } : {}),
+      ...(e.reason === "host" && FIELD_PROVIDER_FIELDS.includes(e.field as (typeof FIELD_PROVIDER_FIELDS)[number]) ? { field: e.field } : {}),
+    },
+  ],
+  onVaultLogin: (e) => [
+    {
+      username: typeof e.username === "string" ? e.username.slice(0, 1024) : "",
+      password: typeof e.password === "string" && e.password.length <= 1024 ? e.password : "",
+      main: e.main === true,
     },
   ],
   onFieldProviderHint: (e) => [{ state: e.state === "dismissed" ? "dismissed" : "shown" } as FieldProviderHint],

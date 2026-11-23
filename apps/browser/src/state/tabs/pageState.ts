@@ -12,6 +12,8 @@ import type { ExternalAppRequest } from "../../platform/siteSettings";
 import type { PermissionRequest } from "../../platform/permissions";
 
 type VerificationCodeOffer = { token: string; app: string; host: string; generation: number };
+import type { VaultSaveOffer } from "../vaults/save";
+import type { VaultMenu } from "../vaults/menu";
 import { create } from "zustand";
 import { useBrowser } from "../browser/store";
 import { recordWatch, useKeyed } from "../browser/keyedWatch";
@@ -36,6 +38,8 @@ export type PageState = {
   autofillPrompt: AutofillPrompt | null;
   externalApp: ExternalAppRequest | null;
   verificationCode: VerificationCodeOffer | null;
+  vaultSave: VaultSaveOffer | null;
+  vaultMenu: VaultMenu | null;
   mediaAccess: MediaAccess | null;
   wasNewTab: boolean;
   backToNewTab: boolean;
@@ -58,6 +62,8 @@ const IDLE_PAGE: PageState = {
   autofillPrompt: null,
   externalApp: null,
   verificationCode: null,
+  vaultSave: null,
+  vaultMenu: null,
   mediaAccess: null,
   wasNewTab: false,
   backToNewTab: false,

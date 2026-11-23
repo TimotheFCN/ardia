@@ -11,6 +11,7 @@ export const updatePassword = (profile: string, origin: string, username: string
 
 export const listPasswords = async (profile: string) => (await call("passwords.list", { profile })).passwords;
 export const unlockPasswords = async (profile: string) => (await call("passwords.unlock", { profile })).unlocked;
+export const confirmDeviceOwner = async (reason: string) => (await call("passwords.confirmOwner", { reason })).confirmed === true;
 export async function getPassword(profile: string, origin: string, username: string): Promise<PasswordSecret | null> {
   const { password } = await call("passwords.reveal", { profile, origin, username });
   return typeof password === "string" ? asSecret("password", password) : null;

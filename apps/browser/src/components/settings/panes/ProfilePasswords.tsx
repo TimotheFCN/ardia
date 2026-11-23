@@ -35,6 +35,8 @@ import { useGrowingRows } from "../../../state/settings/growingRows";
 import { notePasswordListShown } from "../../../state/telemetry/exportCounts";
 import { useManagerPlugins, useProfilePasswordManager } from "../../../state/site/passwordManager";
 import { offerToSaveHandedOver, PasswordManagerRow } from "./PasswordManagerRow";
+import { managerPluginOf } from "../../../state/site/passwordManagerChoice";
+import { VaultPasswordsPage } from "./VaultPasswords";
 
 function passwordManagerAppsNote() {
   const apps = `1Password, Bitwarden, KeePassXC and Proton Pass extensions connect to their ${PLATFORM_TERMS.computer} apps.`;
@@ -76,6 +78,11 @@ export function PasswordsSection({ profileId }: { profileId: string }) {
 }
 
 export function PasswordsPage({ profileId }: { profileId: string }) {
+  const vault = managerPluginOf(useManagerPlugins(), useProfilePasswordManager(profileId));
+  return vault?.spec.fill === "tool" ? <VaultPasswordsPage profileId={profileId} plugin={vault} /> : <SavedPasswordsPage profileId={profileId} />;
+}
+
+export function SavedPasswordsPage({ profileId }: { profileId: string }) {
   const theme = useTheme();
   const [list, setList] = useState<SavedPassword[] | null>(null);
   const [never, setNever] = useState<string[]>([]);

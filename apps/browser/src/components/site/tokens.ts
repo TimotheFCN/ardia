@@ -51,3 +51,5 @@ export const siteLine = { get checkLabel() { return lineHeight.body; } } as cons
 export const selectionBar = { showDelay: 150 } as const;
 
 export const UNAVAILABLE_OPACITY = 0.4;
+
+export const vaultMenu = { width: 380, gap: 6, roomBelow: 280, icon: 16, loginRow: 44, listHeight: 320, maxResults: 50 } as const;

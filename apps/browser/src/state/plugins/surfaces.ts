@@ -166,9 +166,14 @@ let promptSeq = 0;
 export const PROMPT_BUSY = "Another plugin prompt is open.";
 
 export function showPluginQuickPick(plugin: string, windowId: string, items: QuickPickItem[], options: QuickPickOptions): Promise<string[] | null> | null {
+  const asked = showQuickPick(plugin, windowId, items, options);
+  if (asked) notePlugin("plugin_ui_prompts");
+  return asked;
+}
+
+export function showQuickPick(plugin: string, windowId: string, items: QuickPickItem[], options: QuickPickOptions): Promise<string[] | null> | null {
   if (usePluginSurfaces.getState().quickPick || usePluginSurfaces.getState().inputBox) return null;
   const id = `qp${++promptSeq}`;
-  notePlugin("plugin_ui_prompts");
   return new Promise((resolve) => {
     quickPickAnswers.set(id, { plugin, resolve });
     usePluginSurfaces.setState({ quickPick: { id, plugin, windowId, items, options } });

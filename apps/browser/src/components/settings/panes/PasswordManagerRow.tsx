@@ -63,5 +63,6 @@ export function offerToSaveHandedOver(effective: PasswordManagerChoice, plugins:
   if (effective === "ardia") return null;
   if (effective === "none") return "Your password manager extension handles logins in this profile, so Ardia doesn't offer to save them.";
   const plugin = plugins.find((p) => `plugin:${p.name}` === effective);
+  if (plugin?.spec.fill === "tool") return `New logins are saved to ${plugin.title} instead. Logins saved in Ardia still fill.`;
   return `${plugin?.title ?? "Another password manager"} handles logins in this profile, so Ardia doesn't offer to save them. Logins already saved in Ardia still fill.`;
 }

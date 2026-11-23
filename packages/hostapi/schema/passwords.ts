@@ -98,6 +98,13 @@ export const passwords = defineDomain({
       mac: "custom",
       windows: "absent",
     },
+    confirmOwner: {
+      args: "{ reason: string }",
+      result: "{ confirmed: boolean }",
+      desktop: "absent",
+      mac: "custom",
+      windows: "absent",
+    },
     otpauthHandler: {
       args: "{}",
       result: "{ app: string | null }",

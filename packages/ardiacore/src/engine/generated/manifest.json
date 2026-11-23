@@ -693,6 +693,11 @@
           "desktop": "absent",
           "windows": "absent"
         },
+        "confirmOwner": {
+          "mac": "custom",
+          "desktop": "absent",
+          "windows": "absent"
+        },
         "otpauthHandler": {
           "mac": "custom",
           "desktop": "absent",

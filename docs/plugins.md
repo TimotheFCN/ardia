@@ -747,7 +747,7 @@ declare one, and each group of profiles that shares browser data picks at most o
   views no site of their own. So once the panel is on screen, Ardia shows a hint beside the key, on the side the panel
   doesn't cover: "Type github in Passwords to find this site", with the page's registrable domain label. It closes with
   the panel, when focus leaves the field or the page navigates, and a profile stops seeing it after closing it 3 times.
-  `tool` is reserved (below) and refused for now ("passwordManager.fill: tool isn't available yet; use system").
+  `tool` is a manager with its own vault, answered by the plugin's sidecar (below).
 - `fields` (required, 1 or 2): which fields get the key: `login` (username, email and current password) and
   `oneTimeCode`.
 - `verificationCodeSetup` (`system`): when a page in a profile using this plugin shows an `otpauth://` link, or a QR code
@@ -827,10 +827,42 @@ focused field (`passwords.showSystemPanel {tab, generation}`, in Chromium and We
 **An otpauth link you click** still goes through the external-app prompt every link to another app gets, which shows
 the address in Ardia's own interface. That's base behaviour, unchanged; no plugin, log or count sees the address.
 
-**`fill: "tool"` (reserved, #1168).** For managers with their own vault (1Password, Bitwarden, Proton Pass). Not a
-normal tool: a host-only request the CLI and other plugins can never call, versioned, bound to the exact origin and
-form it fills, cancellable, with a consent line naming that the origin is sent to the plugin. The host would type the
-answer into that one field. Not built.
+**`fill: "tool"`.** For managers with their own vault (1Password, Bitwarden, Proton Pass). The plugin needs a
+sidecar, and the sidecar keeps the vault: Ardia never holds it. The sidecar announces itself with
+`vault.ready {protocol: 1, provider, capabilities}` (with `capabilities.accounts`) and reports
+`vault.event {event: "state" | "changed", account, data}`. Each profile has its own accounts (profiles that share browser
+data share them, and a private window uses its profile's): every call's input names one as `account`, an id derived from
+the engine profile, then `-2`, `-3` for more, found again with `accounts`. Signing in, locking and signing out in one space
+leaves the others alone, and the key lists the logins of every unlocked account in the space. Ardia
+asks with calls of kind `vault` (`{call, kind: "vault", name, input, caller: {kind: "host"}, deadline}`), which only
+Ardia makes: never the `ardia` command or another plugin, through `tools.call` or otherwise. A verb's own error comes
+back inside the result (`{error: {code, message}}`), so its code survives. The verbs are rbw-ng's embedded protocol
+(`status`, `signIn`, `unlock`, `lock`, `signOut`, `sync`, `forgetHostKey`, `match`, `items`, `fill`, `totp`, `reveal`,
+`save`, `update`, `delete`, `generate`); `capabilities.servers` and `selfHosted` fill the sign-in sheet, and
+`edit`, `reveal` and `delete` together turn on editing. In a profile on such a manager the key is pushed in `host` mode
+(`setFieldProviders` entries carry `fill: "host"`): its click reports `fieldProviderOpened {reason: "host", field}`
+instead of opening macOS's panel, and `state/vaults/menu.ts` opens Ardia's vault menu (`components/site/VaultMenu.tsx`)
+under the focused field: the site's logins (`match`, `items`: names, usernames and addresses only), grouped by account,
+with a search over every login, then Unlock and Use Strong Password, then Manage Passwords and Lock.
+Edit › AutoFill › Passwords… opens it too. `state/vaults/fill.ts` asks the sidecar for the login picked (`fill` or
+`totp`, bound to the page's origin) and types the values from Ardia's own script world, only if the page is still on
+that origin. Filling a login found by search on a site it isn't saved for asks first, naming both sites, and either adds
+the site to the login (`update`) or fills once (`chosen: true`, still only on an https page). The profile's **Passwords** page shows the
+manager's accounts and logins instead of Ardia's own (`components/settings/panes/VaultPasswords.tsx`): sign in, lock,
+sign out, sync, and view, add, edit or delete a login; a login's password and notes come from `reveal` after
+`passwords.confirmOwner`, and a deleted one goes to the manager's trash. After a trusted submit, Enter or press in a
+form with a password, the page script of a profile on such a manager (the provider's `host` flag) sends `vaultLogin
+{username, password, generation}`; native passes it on only for that profile and generation, from a same-site frame,
+within 1024 characters each, as the `vaultLogin` page event. Ardia then offers, in a popover like its own save prompt,
+to save the login for the tab's https origin or to update the password of the login with that username, and does
+nothing when the vault already has that password; the password stays out of the page store until the person saves.
+**Use Strong Password**, in a password field's key menu, fills a `generate`d password into that field and the empty
+ones after it, and offers to save it the same way. Master passwords are typed in native secure
+prompts only. Each account picks how it unlocks again (`state/vaults/unlock.ts`): the master password every time;
+Touch ID with a session key the sidecar wrapped the vault key with, which dies with Ardia (the default); or, after a
+confirmation and the master password, Touch ID with a persistent key that survives a restart. Ardia keeps the choice
+and a persistent key in its own Keychain entry (`ardia.vault.<plugin>.<account>`, out of reach of the plugin's
+`secrets`), releases a key only after `passwords.confirmOwner`, and drops it when it stops opening the vault.
 
 #### Host extension points for credential providers
 

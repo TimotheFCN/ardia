@@ -13,7 +13,7 @@ const { usePasswordUnlocks } = await import("../../../state/site/savedPasswords.
 const { noteSettingsScroll, ROW_PAGE, useGrowingRows } = await import("../../../state/settings/growingRows.ts");
 const { Row } = await import("../Form.tsx");
 const { takeExportCounts } = await import("../../../state/telemetry/exportCounts.ts");
-const { PasswordsPage } = await import("./ProfilePasswords.tsx");
+const { SavedPasswordsPage } = await import("./ProfilePasswords.tsx");
 
 const S = () => useBrowser.getState();
 const flush = () => new Promise((r) => setImmediate(r));
@@ -38,7 +38,7 @@ async function openPasswords(n) {
   S().createWindow({ url: "https://a.com/" });
   savedLogins(n);
   usePasswordUnlocks.setState({ unlocked: { "": true } });
-  const page = mount(() => PasswordsPage({ profileId: S().settings.defaultProfileId }));
+  const page = mount(() => SavedPasswordsPage({ profileId: S().settings.defaultProfileId }));
   await flush();
   await flush();
   return page;

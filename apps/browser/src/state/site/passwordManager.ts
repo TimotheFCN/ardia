@@ -26,6 +26,7 @@ import {
   type PasswordManagerChoice,
 } from "./passwordManagerChoice";
 import { closeVerificationCodePrompts, offerVerificationCode } from "./verificationCodes";
+import { openVaultFill } from "../vaults/menu";
 import { followMode, forgetHeldOffOutside, forgetPendingOfferToSave, offerToSaveHeldOffSomewhere, passwordAutofill, pendingOfferToSave, startOfferToSave, watchPendingOfferToSave, writeOfferToSave } from "./offerToSave";
 
 export { forgetPendingOfferToSave, passwordAutofill };
@@ -357,6 +358,13 @@ function codeSetupOn(tabId: string): boolean {
 export const verificationCodeFound = (tabId: string, found: VerificationCodeFound) => offerVerificationCode(tabId, found, codeSetupOn, generation);
 
 export function fieldProviderOpened(tabId: string, event: FieldProviderOpened) {
+  if (event?.reason === "host") {
+    const tab = browser().tabs[tabId];
+    const plugin = tab ? currentManagerPlugin(tab.profileId) : null;
+    if (plugin?.spec.fill === "tool") void openVaultFill(tabId, plugin.name, plugin.title, event.field);
+    else console.warn(`[vaults] the key reported a host click, but ${tabId}'s profile has no vault manager`);
+    return;
+  }
   if (event?.via === "badge" || event?.via === "menu") notePasswordPanel(event.via, event.shown === true, event.reason);
   void offerPanelHint(tabId, event);
 }

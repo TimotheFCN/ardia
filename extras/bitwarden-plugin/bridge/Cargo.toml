@@ -1,0 +1,15 @@
+[package]
+name = "bitwarden-bridge"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The Bitwarden plugin's sidecar: carries Ardia's vault calls to rbw-ng's embedded agent and its answers back"
+license = "MIT"
+
+[dependencies]
+libc = "0.2"
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = true

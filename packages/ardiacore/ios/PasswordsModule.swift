@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import LocalAuthentication
 
 public class PasswordsModule: Module {
   public func definition() -> ModuleDefinition {
@@ -65,6 +66,18 @@ public class PasswordsModule: Module {
       reply.ok(["shown": ArdiaWebView.showFieldProviderHint(label, side: side, tab: tab)])
     },
     systemPanelAvailable: { _, reply in reply.ok(ArdiaWebView.systemPanelAvailability) },
+    confirmOwner: { args, reply in
+      let reason = try args.text("reason")
+      let context = LAContext()
+      var problem: NSError?
+      guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &problem) else {
+        NSLog("[passwords] device owner check unavailable: %@", problem?.localizedDescription ?? "unknown")
+        return reply.ok(["confirmed": false])
+      }
+      context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { granted, _ in
+        withExtendedLifetime(context) { DispatchQueue.main.async { reply.ok(["confirmed": granted]) } }
+      }
+    },
     otpauthHandler: { _, reply in reply.ok(["app": ArdiaWebView.otpauthHandlerName as Any? ?? NSNull()]) },
     setUpVerificationCode: { args, reply in
       let tab = try args.text("tab")

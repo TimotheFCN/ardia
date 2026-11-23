@@ -314,8 +314,9 @@ void OpenSystemPanel(NSView *page, void (^done)(NSDictionary *result)) {
     NSArray *fields = Field<NSArray>(entry, @"fields") ?: @[];
     const BOOL login = [fields containsObject:@"login"], oneTimeCode = [fields containsObject:@"oneTimeCode"], codeSetup = Flag(entry, @"codeSetup");
     if (!profile || !(login || oneTimeCode || codeSetup)) continue;
+    const BOOL host = [Field<NSString>(entry, @"fill") isEqualToString:@"host"];
     providers[ardia_host::OriginalProfileName(profile)] =
-        @{@"login" : @(login), @"oneTimeCode" : @(oneTimeCode), @"codeSetup" : @(codeSetup), @"generation" : @(generation)};
+        @{@"login" : @(login), @"oneTimeCode" : @(oneTimeCode), @"codeSetup" : @(codeSetup), @"host" : @(host), @"generation" : @(generation)};
   }
   const BOOL changed = newSession || generation != gFieldProviderGeneration || ![providers isEqualToDictionary:gFieldProviders];
   gFieldProviderSession = [session copy];
@@ -440,7 +441,7 @@ void OpenSystemPanel(NSView *page, void (^done)(NSDictionary *result)) {
                   completion:(void (^)(NSDictionary *result))completion {
   void (^done)(NSDictionary *) = ^(NSDictionary *result) {
     NSString *reason = result[@"reason"];
-    if (reason)
+    if (reason && ![reason isEqualToString:@"host"])
       os_log(OS_LOG_DEFAULT, "[ardiacore] system passwords panel refused reason=%{public}@ via=%{public}s field=%{public}@", reason, field ? "badge" : "menu",
              LoggedFieldKind(field));
     completion(result);
@@ -450,6 +451,10 @@ void OpenSystemPanel(NSView *page, void (^done)(NSDictionary *result)) {
   if ((field || generation >= 0) && generation != gFieldProviderGeneration) return done(@{@"shown" : @NO, @"reason" : @"stale"});
   NSString *focus = FieldProviderPage(owner)[@"focus"];
   if (!ProviderWants(provider, focus) || (field && ![field isEqualToString:focus])) return done(@{@"shown" : @NO, @"reason" : @"notFocused"});
+  if (Flag(provider, @"host")) {
+    os_log(OS_LOG_DEFAULT, "[ardiacore] passwords key handed to the host field=%{public}@", LoggedFieldKind(focus));
+    return done(@{@"shown" : @NO, @"reason" : @"host", @"field" : focus});
+  }
   OpenSystemPanel(page, done);
 }
 
@@ -530,6 +535,7 @@ void OpenSystemPanel(NSView *page, void (^done)(NSDictionary *result)) {
           NSMutableDictionary *payload = [@{@"via" : @"menu", @"shown" : result[@"shown"] ?: @NO} mutableCopy];
           if (reason) payload[@"reason"] = reason;
           if (result[@"panel"]) payload[@"panel"] = result[@"panel"];
+          if (result[@"field"]) payload[@"field"] = result[@"field"];
           [weakView emit:@"fieldProviderOpened" payload:payload];
         }
         completion(result);

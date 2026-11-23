@@ -34,6 +34,7 @@ import { zoomChangedByUser } from "../../state/site/zoomBubble";
 import { markTabReady, patchPage, pageOf } from "../../state/tabs/pageState";
 import { popupBlocked, showAutofillPrompt, showExternalApp, showPasswordPrompt } from "../../state/site/prompts";
 import { fieldProviderHint, fieldProviderOpened, verificationCodeFound, type FieldProviderHint, type FieldProviderOpened, type VerificationCodeFound } from "../../state/site/passwordManager";
+import { vaultLoginSubmitted, type VaultLogin } from "../../state/vaults/save";
 import { verificationCodeDocument, verificationCodeTabGone } from "../../state/site/verificationCodes";
 import { hoverStatus } from "../../state/tabs/hoverStatus";
 import { endPageDocument, forgetPageDocument, notePageDocument } from "../../state/plugins/pageBarDocuments";
@@ -357,6 +358,7 @@ function EngineWebView({ tabId, visible, selected = true, warm, peekOf, engine, 
       }}
       onAutoplayBlocked={(count) => noteSiteControls("autoplayPlaysBlocked", count)}
       onFieldProviderOpened={(opened: FieldProviderOpened) => fieldProviderOpened(tabId, opened)}
+      onVaultLogin={(login: VaultLogin) => void vaultLoginSubmitted(tabId, login)}
       onFieldProviderHint={(hint: FieldProviderHint) => fieldProviderHint(tabId, hint)}
       onVerificationCodeFound={(found: VerificationCodeFound) => verificationCodeFound(tabId, found)}
       onNotificationClose={closeWebNotification}

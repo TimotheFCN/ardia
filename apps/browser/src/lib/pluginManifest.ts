@@ -93,6 +93,7 @@ function contributionProblems(c: Check, k: PluginContributions, permissions: Plu
   const needsRuntime: [string, boolean][] = [["tool commands", k.commands.some((x) => "tool" in x.action)], ["tools", k.tools.length > 0], ["hooks", k.hooks.length > 0]];
   for (const [what, used] of needsRuntime) if (used && !runtime.main && !runtime.sidecar) c.problems.push(`${what} needs a main or a sidecar`);
   if (k.settings.rows.some((r) => r.type === "secret") && !permissions.secrets) c.problems.push(`${K}.settings.rows: a secret row needs the secrets permission`);
+  if (k.passwordManager?.fill === "tool" && !runtime.sidecar) c.problems.push(`${K}.passwordManager.fill: tool needs a sidecar, which answers the vault calls`);
 }
 
 function keywordsOf(c: Check, value: unknown): string[] {

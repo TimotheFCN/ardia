@@ -29,6 +29,7 @@ export type PromptOptions = {
   placeholder?: string;
   confirmTitle?: string;
   windowId?: string;
+  secure?: boolean;
 };
 
 export type DialogsNative = {

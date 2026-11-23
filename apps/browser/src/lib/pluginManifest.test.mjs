@@ -204,9 +204,15 @@ test("a password manager declares how it fills, which fields get the key, and wh
   assert.equal(readManifest(FIXTURE).manifest.passwordManager, null);
 });
 
-test("fill: tool is reserved and refused by name, and every other shape is reported with its path", () => {
+test("fill: tool needs a sidecar to answer the vault calls, and every other shape is reported with its path", () => {
   const doc = (passwordManager) => ({ ...JSON.parse(PASSWORD_FIXTURE), passwordManager });
-  assert.deepEqual(problems(doc({ fill: "tool", fields: ["login"] })), ["plugin.json: passwordManager.fill: tool isn't available yet; use system"]);
+  assert.deepEqual(problems(doc({ fill: "tool", fields: ["login"] })), ["plugin.json: passwordManager.fill: tool needs a sidecar, which answers the vault calls"]);
+  const withSidecar = readManifest(
+    JSON.stringify({ manifest: 2, name: "vault", title: "Vault", version: "1.0.0", requires: "0.0.0", sidecar: { run: ["bin/helper"] }, contributes: { passwordManager: { fill: "tool", fields: ["login", "oneTimeCode"] } } }),
+  );
+  assert.deepEqual(withSidecar.problems, []);
+  assert.equal(withSidecar.manifest.passwordManager.fill, "tool");
+  assert.deepEqual(problems(doc({ fill: "own", fields: ["login"] })), ["plugin.json: passwordManager.fill must be system or tool"]);
   assert.deepEqual(problems(doc({ fill: "system", fields: ["login", "login"] })), ["plugin.json: passwordManager.fields has login twice"]);
   assert.ok(problems(doc({ fill: "system", fields: [] }))[0].includes("passwordManager.fields must be a list of 1 to 2"));
   assert.ok(problems(doc({ fill: "system", fields: ["login"], extra: 1 }))[0].includes("passwordManager.extra isn't a key"));
@@ -218,7 +224,7 @@ test("the schema holds passwordManager to the same shape the app reads", () => {
   const schema = pluginSchema([], { untabbedEvents: [], approvedSettings: [] }).then.properties.contributes.properties.passwordManager;
   assert.equal(schema.additionalProperties, false);
   assert.deepEqual(schema.required, ["fill", "fields"]);
-  assert.deepEqual(schema.properties.fill.enum, ["system"]);
+  assert.deepEqual(schema.properties.fill.enum, ["system", "tool"]);
   assert.deepEqual(schema.properties.fields.items.enum, ["login", "oneTimeCode"]);
 });
 

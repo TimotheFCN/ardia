@@ -19,8 +19,10 @@ export type NavigationState = {
 };
 
 export type AppBadge = { origin: string; count: number | null; flag: boolean };
-export type FieldProviderPanelRefusal = "hidden" | "notFocused" | "unavailable" | "notKey" | "notEditing" | "throttled" | "refused" | "noPanel";
-export type FieldProviderOpened = { via: "badge" | "menu"; shown: boolean; reason?: FieldProviderPanelRefusal; panel?: "above" | "below" };
+export type FieldProviderPanelRefusal = "hidden" | "notFocused" | "unavailable" | "notKey" | "notEditing" | "throttled" | "refused" | "noPanel" | "host";
+export type VaultLogin = { username: string; password: string; main: boolean };
+
+export type FieldProviderOpened = { via: "badge" | "menu"; shown: boolean; reason?: FieldProviderPanelRefusal; panel?: "above" | "below"; field?: "username" | "password" | "code" };
 export type FieldProviderHint = { state: "shown" | "dismissed" };
 export type VerificationCodeFound = { token: string; app: string; main: boolean };
 
@@ -251,6 +253,7 @@ export type WebViewProps = ViewProps & {
   onTransferRefused?: (fromWindowId: string) => void;
   onAppBadge?: (badge: AppBadge) => void;
   onFieldProviderOpened?: (opened: FieldProviderOpened) => void;
+  onVaultLogin?: (login: VaultLogin) => void;
   onFieldProviderHint?: (hint: FieldProviderHint) => void;
   onVerificationCodeFound?: (found: VerificationCodeFound) => void;
 };

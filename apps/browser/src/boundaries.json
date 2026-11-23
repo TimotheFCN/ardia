@@ -249,10 +249,19 @@
    ]
   },
   {
+   "id": "chromium-page-message:vaultLogin",
+   "source": "frame",
+   "guard": "Only for a profile whose password manager fills from its own vault (provider host flag) and the current provider generation; same-site checked against the browser-verified origin; a password of 1 to 1024 characters and a username of at most 1024 are passed on, never truncated. JS only offers to save them for the tab's https origin, and saves after the person confirms",
+   "checks": [
+    "packages/ardiacore/ios/ArdiaWebView+PageMessages.mm",
+    "apps/browser/src/state/vaults/vaults.test.mjs"
+   ]
+  },
+  {
    "id": "page-script-message-count:page_script.js",
    "source": "page",
    "guard": "Every send or post call in the page script, including those with a kind computed at run time; each literal kind has its own row and native receiver. The count changes when a send is added, so a new one gets reviewed",
-   "count": 34,
+   "count": 35,
    "checks": [
     "packages/ardiacore/ios/page_script.js"
    ]
@@ -275,7 +284,7 @@
   {
    "id": "page-script-listener:click",
    "source": "page",
-   "guard": "isTrusted and primary button checked before anything is sent (link notes, Peek)"
+   "guard": "isTrusted and primary button checked before anything is sent (link notes, Peek); the vault login offer reads a form only after a trusted press, in a profile whose password manager is a vault"
   },
   {
    "id": "page-script-listener:dragend",
@@ -315,7 +324,7 @@
   {
    "id": "page-script-listener:keydown",
    "source": "page",
-   "guard": "isTrusted checked before marking the page as used"
+   "guard": "isTrusted checked before marking the page as used; the vault login offer reads a form only after a trusted Enter in a login field"
   },
   {
    "id": "page-script-listener:keystatuseschange",
@@ -380,7 +389,7 @@
   {
    "id": "page-script-listener:submit",
    "source": "page",
-   "guard": "reads fields only after a trusted keystroke or press was recorded"
+   "guard": "reads fields only after a trusted keystroke or press was recorded; the vault login offer needs a trusted submit"
   },
   {
    "id": "page-script-listener:visibilitychange",
@@ -396,7 +405,7 @@
    "id": "page-script-listener-count:page_script.js",
    "source": "page",
    "guard": "Every listener in the page script; each event type has its own row. The count changes when a listener is added, so a new one gets reviewed",
-   "count": 66,
+   "count": 69,
    "checks": [
     "packages/ardiacore/ios/page_script.js"
    ]
@@ -508,6 +517,14 @@
    "id": "webkit-page-message:verificationCode",
    "source": "frame",
    "guard": "Main frame only; bound to frame and navigation; filling needs a click"
+  },
+  {
+   "id": "webkit-page-message:vaultLogin",
+   "source": "frame",
+   "guard": "Same checks as Chromium's: host flag and generation from ArdiaWebView.fieldProvider, sameOriginAsTop on frameInfo.securityOrigin, length limits (WebKitTab+FieldProviders.swift)",
+   "checks": [
+    "packages/ardiacore/ios/WebKitTab+FieldProviders.swift"
+   ]
   },
   {
    "id": "webkit-page-listener-count:WebKitAutofillScript.swift",
@@ -740,6 +757,15 @@
    "count": 1,
    "checks": [
     "apps/browser/src/state/telemetry/barLoadFocus.ts"
+   ]
+  },
+  {
+   "id": "evaluate-result:state/vaults/fill.ts",
+   "source": "main-world",
+   "guard": "Vault fill, Use Strong Password and the menu's anchor: a fill's result is only compared with \"noField\"; the new-password script's is a count and the form's username, which only pre-fills the save offer the person confirms; the focused field's rectangle is four finite numbers that only place the menu. The scripts carry their values as JSON data and fill nothing once the page left the origin",
+   "count": 3,
+   "checks": [
+    "apps/browser/src/state/vaults/vaults.test.mjs"
    ]
   },
   {
@@ -1122,6 +1148,24 @@
    ],
    "findings": [
     "D4"
+   ]
+  },
+  {
+   "id": "plugin-method:vault.event",
+   "source": "plugin",
+   "guard": "Only from a fill: \"tool\" manager after its vault.ready on the same run; a state or changed event for one account id updates that account's state and nothing else",
+   "checks": [
+    "apps/browser/src/state/vaults/store.ts#vaultMessage",
+    "apps/browser/src/state/vaults/vaults.test.mjs"
+   ]
+  },
+  {
+   "id": "plugin-method:vault.ready",
+   "source": "plugin",
+   "guard": "Refused unless the manifest declares fill: \"tool\", the protocol is 1 and the helper serves accounts; capabilities are read field by field (capabilitiesOf)",
+   "checks": [
+    "apps/browser/src/state/vaults/store.ts#vaultMessage",
+    "apps/browser/src/state/vaults/vaults.test.mjs"
    ]
   },
   {

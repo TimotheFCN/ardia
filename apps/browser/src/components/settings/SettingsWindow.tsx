@@ -36,6 +36,8 @@ import { WindowControls } from "../window/WindowControls";
 import { LeadingWindowControls } from "../window/LeadingWindowControls";
 import { useWindowChrome } from "../../state/windows/windowButtons";
 import { noteSettingsScroll } from "../../state/settings/growingRows";
+import { noteSettingsOffset, noteSettingsViewport } from "../../state/settings/settingsScroll";
+import { SettingsContentContext } from "./WindowedRows";
 
 const SIDEBAR = settingsLayout.sidebarWidth;
 const TOOLBAR = pageToolbar.window.height;
@@ -175,14 +177,20 @@ export function SettingsWindow() {
           onScroll={({ nativeEvent: { contentOffset, layoutMeasurement, contentSize } }) => {
             scrollTop.current = contentOffset.y;
             noteSettingsScroll(contentOffset.y, layoutMeasurement.height, contentSize.height);
+            noteSettingsOffset(contentOffset.y, layoutMeasurement.height);
           }}
-          onLayout={(e) => void (viewport.current = e.nativeEvent.layout.height)}
+          onLayout={(e) => {
+            viewport.current = e.nativeEvent.layout.height;
+            noteSettingsViewport(viewport.current);
+          }}
           contentContainerStyle={PANE_SCROLL}>
           <View key={page} ref={content} collapsable={false} style={PANE_COLUMN}>
             {shown ? (
               <NativeFormContext.Provider value>
                 <SettingsPaneContext.Provider value={shown.pane}>
-                  <Pane {...shown} />
+                  <SettingsContentContext.Provider value={content}>
+                    <Pane {...shown} />
+                  </SettingsContentContext.Provider>
                 </SettingsPaneContext.Provider>
               </NativeFormContext.Provider>
             ) : null}

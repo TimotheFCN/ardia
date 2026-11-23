@@ -21,6 +21,8 @@ export const OVERLAY = {
   selection: 1 << 14,
   loading: 1 << 15,
   control: 1 << 16,
+  vaultSave: 1 << 17,
+  vaultMenu: 1 << 18,
 } as const;
 
 export type Overlay = keyof typeof OVERLAY;
@@ -34,7 +36,9 @@ export const pageOverlays = (p: PageState): number =>
   (p.passwordPrompt ? OVERLAY.password : 0) |
   (p.autofillPrompt ? OVERLAY.autofill : 0) |
   (p.verificationCode ? OVERLAY.verificationCode : 0) |
-  (p.externalApp ? OVERLAY.externalApp : 0);
+  (p.externalApp ? OVERLAY.externalApp : 0) |
+  (p.vaultSave ? OVERLAY.vaultSave : 0) |
+  (p.vaultMenu ? OVERLAY.vaultMenu : 0);
 
 export const overlayBits = (on: Partial<Record<Overlay, boolean>>): number => {
   let bits = 0;

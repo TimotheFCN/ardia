@@ -514,13 +514,14 @@
     const ONE_TIME_CODE = /(^|\s)one-time-code(\s|$)/i;
     const USERNAME_HINT = /user|e-?mail|login|account/i;
     const OTPAUTH_PREFIXES = ["otpauth://", "otpauth-migration://"];
-    const hasOwnToggle = (el) => {
+    const ownToggle = (el) => {
       for (let n = el.parentElement, depth = 0; n && depth < 3 && n.querySelectorAll("input").length === 1; n = n.parentElement, depth++)
         for (const c of n.querySelectorAll('button, [role="button"], [aria-label], [title], [class*="eye" i], [class*="toggle" i]'))
           if (c !== el && /show|hide|reveal|toggle|visib|eye|peek|afficher|mostrar|anzeigen/i.test((c.getAttribute("aria-label") || "") + " " + (c.getAttribute("title") || "") + " " + (c.getAttribute("class") || "")))
-            return true;
-      return false;
+            return c;
+      return null;
     };
+    const hasOwnToggle = (el) => !!ownToggle(el);
     const nearPassword = (el, shown) => {
       let scope = el.form;
       for (let n = el.parentElement, depth = 0; !scope && n && depth < 6; n = n.parentElement, depth++)
@@ -656,7 +657,12 @@
       const rtl = cs.direction === "rtl";
       const inset = Math.max(4, Math.min(10, parseFloat(rtl ? cs.paddingLeft : cs.paddingRight) || 4));
       const border = parseFloat(rtl ? cs.borderLeftWidth : cs.borderRightWidth) || 0;
-      return { left: rtl ? r.left + border + inset : r.right - border - inset - width, top: r.top + (r.height - size) / 2, size, width, color: fieldInk(field, cs) };
+      let left = rtl ? r.left + border + inset : r.right - border - inset - width;
+      const toggle = config && config.host ? ownToggle(field) : null;
+      const t = toggle && toggle.getBoundingClientRect();
+      if (t && t.width > 0 && t.top < r.bottom && t.bottom > r.top && t.left < r.right && t.right > r.left)
+        left = rtl ? Math.max(left, t.right + 4) : Math.min(left, t.left - 4 - width);
+      return { left, top: r.top + (r.height - size) / 2, size, width, color: fieldInk(field, cs) };
     };
     const hideHint = () => {
       if (hintHost) hintHost.style.display = "none";
@@ -779,7 +785,7 @@
       const kind = loginFieldKind(el, revealed());
       if (!kind || !wants(kind)) return hideKey();
       if (el.value && typed.has(el)) return hideKey();
-      if (kind === "password" && keyField !== el && hasOwnToggle(el)) return hideKey();
+      if (kind === "password" && keyField !== el && !config.host && hasOwnToggle(el)) return hideKey();
       ensureKey();
       keyField = el;
       keyKind = kind;
@@ -921,6 +927,17 @@
         true,
       );
       document.addEventListener("input", noteInput, true);
+      document.addEventListener("submit", (e) => e.isTrusted && offerLogin(e.target), true);
+      document.addEventListener("keydown", (e) => e.isTrusted && e.key === "Enter" && loginFieldKind(e.target, revealed()) && offerLogin(e.target), true);
+      document.addEventListener(
+        "click",
+        (e) => {
+          if (!e.isTrusted || !e.target || !e.target.closest) return;
+          const button = e.target.closest('button, input[type="submit"], input[type="button"], [role="button"]');
+          if (button && !(keyHost && keyHost.contains(button))) offerLogin(button);
+        },
+        true,
+      );
       document.addEventListener("load", (e) => findsCodes() && e.target && e.target.localName === "img" && scanSoon(), true);
       document.addEventListener("visibilitychange", () => findsCodes() && scanSoon());
       addEventListener("pageshow", (e) => e.isTrusted && e.persisted && forgetFound());
@@ -930,6 +947,36 @@
       addEventListener("resize", () => keyField && requestAnimationFrame(() => (placeKey(), placeHint())));
       addEventListener("pagehide", hideHint);
     };
+    const MAX_SECRET = 1024;
+    let offeredLogin = "";
+    const loginScope = (el) => {
+      if (el.localName === "form") return el;
+      if (el.form) return el.form;
+      for (let n = el.parentElement, depth = 0; n && depth < 8; n = n.parentElement, depth++) if (n.querySelector('input[type="password"]')) return n;
+      return null;
+    };
+    const submittedLogin = (scope) => {
+      const shown = revealed();
+      const inputs = Array.from(scope.querySelectorAll("input")).filter((el) => !el.disabled && el.type !== "hidden");
+      const passwords = inputs.filter((el) => (el.type === "password" || el === shown) && el.value);
+      if (!passwords.length) return null;
+      const values = passwords.map((el) => el.value);
+      const last = values[values.length - 1];
+      const password = values.length === 2 && values[0] !== values[1] ? values[1] : values.length > 2 ? last : values[0];
+      const before = inputs.slice(0, inputs.indexOf(passwords[0])).filter((el) => (el.type === "email" || el.type === "text" || el.type === "tel") && el.value);
+      const username = before.length ? before[before.length - 1].value : "";
+      return { username, password };
+    };
+    const offerLogin = guard((el) => {
+      if (!config || !config.host || !config.login) return;
+      const scope = loginScope(el);
+      const login = scope && submittedLogin(scope);
+      if (!login || login.password.length > MAX_SECRET || login.username.length > MAX_SECRET) return;
+      const key = login.username + "\n" + login.password;
+      if (key === offeredLogin) return;
+      offeredLogin = key;
+      send("vaultLogin", { username: login.username, password: login.password, generation: config.generation });
+    });
     const stopScanning = () => {
       if (observer) observer.disconnect();
       observer = null;
@@ -937,7 +984,13 @@
     const configure = (state) => {
       const next =
         state && typeof state === "object"
-          ? { login: state.login === true, oneTimeCode: state.oneTimeCode === true, codeSetup: state.codeSetup === true, generation: typeof state.generation === "number" ? state.generation : 0 }
+          ? {
+              login: state.login === true,
+              oneTimeCode: state.oneTimeCode === true,
+              codeSetup: state.codeSetup === true,
+              host: state.host === true,
+              generation: typeof state.generation === "number" ? state.generation : 0,
+            }
           : null;
       const previous = config;
       config = next && (next.login || next.oneTimeCode || next.codeSetup) ? next : null;

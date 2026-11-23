@@ -26,6 +26,15 @@ extension WebKitTab {
       ArdiaWebView.requestSystemPanel(in: view, owner: view, profile: profile, field: field, generation: generation) { [weak self] result in
         self?.emitPanelResult(result, via: "badge")
       }
+    case "vaultLogin":
+      guard let provider = ArdiaWebView.fieldProvider(profile: profile), provider["host"] as? Bool == true,
+        let generation = dict?["generation"] as? Double, generation == provider["generation"] as? Double,
+        let password = dict?["password"] as? String, !password.isEmpty, password.utf16.count <= 1024,
+        sameOriginAsTop(frameInfo)
+      else { return }
+      let username = dict?["username"] as? String ?? ""
+      guard username.utf16.count <= 1024 else { return }
+      emit("vaultLogin", ["username": username, "password": password, "main": main])
     case "verificationCode":
       guard main, let view = webView, let generation = dict?["generation"] as? Double, let url = dict?["url"] as? String,
         view.scriptFrames[frame] != nil,
@@ -82,6 +91,7 @@ extension WebKitTab {
     var payload: [String: Any] = ["via": via, "shown": result["shown"] as? Bool ?? false]
     if let reason { payload["reason"] = reason }
     if let panel = result["panel"] as? String { payload["panel"] = panel }
+    if let field = result["field"] as? String { payload["field"] = field }
     emit("fieldProviderOpened", payload)
   }
 
